@@ -14,6 +14,8 @@ try:
 except ModuleNotFoundError:
     PLOTTING_AVAILABLE = False
 
+# TODO: Add from_bbox method
+
 
 class FlexibleGridLayout:
     """
@@ -228,8 +230,9 @@ class PointAggregator:
         points : np.ndarray
             Array with shape (N, 2) holding x and y coordinates for a collection of N points.
         point_weights : np.ndarray or None, optional
-            An optional 1D array of weights for each point. If no weights are
-            provided (default), data is aggregated using simple counting.
+            An optional 1D array of aggregation weights for each point. If no weights are
+            provided (default), point-data is aggregated using simple counting. Note that
+            aggregation weights can also be negative.
         localise_only : bool, optional
             Whether to skip point-data aggregation during class initialisation.
             Default is False. If True, the provided `points` will still be 'localised'
@@ -333,7 +336,7 @@ class PointAggregator:
             provided (default), point data is aggregated by simple counting. Otherwise,
             aggregation results will be a weighted sum. If provided, the length of
             `point_weights` must match the overall number of points passed during
-            class initialisation (incl. any that are out of bounds).
+            class initialisation (incl. points that are out of bounds, if any).
 
         Returns
         -------

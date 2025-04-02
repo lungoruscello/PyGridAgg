@@ -1,13 +1,14 @@
-# PyGridAgg ![](https://github.com/lungoruscello/PyGridAgg/tree/master/pygridagg/assets/icon1.png)
+# PyGridAgg <img src="pygridagg/assets/icon.png" alt="icon" width="60" height="60"/> 
 
 [![PyPI Latest Release](https://img.shields.io/pypi/v/PyGridAgg.svg)](https://pypi.org/project/CryptNumPy/)
 [![License](https://img.shields.io/pypi/l/PyGridAgg.svg)](https://github.com/lungoruscello/CryptNumPy/blob/master/LICENSE.txt)
 
 ## About
 
-PyGridAgg allows you to quickly and easily aggregate point data on spatial grids.
-It uses vectorised numpy operations [for speed](#Simple-but-fast) and scales to very
-large point datasets.
+PyGridAgg allows you to easily aggregate point data on customisable spatial grids.
+It uses vectorised numpy operations [for speed](#Simple-but-fast) and can handle very
+large point datasets. 
+
 
 ## Installation
 
@@ -24,11 +25,11 @@ from pygridagg.examples import load_japanese_earthquake_data
 # Load example data on earthquakes (geo-coordinates and magnitudes)
 quake_coords, magnitudes = load_japanese_earthquake_data()
 
-# Define a square grid layout with 2,500 cells that covers the 
-# spatial extent of the earthquake data
+# Define a square grid layout with 2,500 cells that covers all 
+# earthquake locations
 layout = SquareGridLayout.from_points(quake_coords, num_cells=2_500)
 
-# Create a PointAggregator to count up earthquakes across grid cells 
+# Count the number of earthquakes across grid cells 
 agg = PointAggregator(layout, quake_coords)
 
 # Plot the aggregated data as a heatmap
@@ -38,17 +39,21 @@ agg.plot()
 ### Explanation of the Quickstart:
 
 **Grid Layout**:
-The above example uses a `SquareGridLayout` in which the total width and height
-are the same and the number of columns equals the number of rows. A more general `FlexibleGridLayout`
-is also available (see below [TODO]).
+The above example uses a `SquareGridLayout`. This is a *restricted* grid 
+layout with an equal number of columns and rows and an equal width and height. 
+A more general `FlexibleGridLayout` 
+is also available (see [further  below](#different-grid-layouts)).
 
 **Auto-sizing**:
-`from_points` automatically sets the overall grid size based on the spatial extent of provided point data.
-The grid's spatial domain is then sub-divided into the requested number of cells.
+`from_points` automatically sets the outer grid bounds to ensure 
+that all provided points are covered. The resulting spatial domain is then
+sub-divided into the specified number of grid cells. 
+
 
 **Point aggregation**:
 `PointAggregator` handles the aggregation of all point data. By default, it simply counts
-the number of points in each grid cell, but users can also obtain **weighted sums** as shown further below [TODO].
+the number of points in each grid cell. But you can easily obtain [weighted sums](#weighted-sums)
+ as well.
 
 **Plotting**:
 The `plot` method is only available when `matplotlib` is installed (optional dependency) 
@@ -56,9 +61,10 @@ and will  generate a heatmap of the aggregated data.
 
 ## Simple but fast
 
-PyGridAgg performs a simple task, but does so efficiently:
+PyGridAgg performs a simple task, but does so efficiently.
 
-In the example below, 10 million random points are counted-up on a grid with 250,000 cells:
+In the example below, 10 million random points are counted-up on a grid with 250,000 
+cells:   
 
 ```python
 import time
@@ -98,11 +104,11 @@ print(f"Execution time: {elapsed_time:.4f} seconds")
 
 ### Weighted sums
 
-By default, each point will have weight 1 during aggregation. You can easily change this
-by passing an array of weights to `PointAggregator`.
+By default, each point will have weight 1 during aggregation. You can change this by passing
+an array of aggregation weights to `PointAggregator`.
 
-Using the earthquake example from earlier for simplicity, you can sum up earthquake 
-*magnitudes* across grid cells as follows:
+In the earthquake example from earlier, we may for instance want to sum-up earthquake 
+*magnitudes* across grid cells:
 
 ```python
 from pygridagg import SquareGridLayout, PointAggregator
@@ -114,10 +120,12 @@ layout = SquareGridLayout.from_points(quake_coords, num_cells=2_500)
 agg = PointAggregator(layout, quake_coords, point_weights=magnitudes)
 agg.plot(cmap='magma')
 ```
+The *average* earthquake magnitude can then also be obtained, and visualised, as follows: 
 
+TODO
 
-### Working with points' grid coordinates
-Many users will be  
+### Extracting points' grid coordinates
+
 
 ...
 
