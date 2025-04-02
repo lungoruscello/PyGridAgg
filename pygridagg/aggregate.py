@@ -15,7 +15,7 @@ except ModuleNotFoundError:
     PLOTTING_AVAILABLE = False
 
 
-class GridLayout:
+class FlexibleGridLayout:
     """
     A 2D grid layout in which the number of columns and rows, as well as
     the grid's total width and height can be set independently of each other.
@@ -100,7 +100,7 @@ class GridLayout:
         self.y_centroids = yy + (self.cell_height / 2)
 
 
-class SquareGridLayout(GridLayout):
+class SquareGridLayout(FlexibleGridLayout):
     """
     A square spatial grid with an equal number of columns and rows.
 
@@ -109,7 +109,7 @@ class SquareGridLayout(GridLayout):
     """
 
     @classmethod
-    def from_points(cls, points, **kwargs):
+    def from_points(cls, points, padding_percentage=.001, **kwargs):
         """
         Create a `SquareGridLayout` that covers the spatial extent of the provided `points`.
 
@@ -117,6 +117,10 @@ class SquareGridLayout(GridLayout):
         ----------
         points : np.ndarray
             Array with shape (N, 2) holding x and y coordinates for a collection of N points.
+        padding_percentage : float, optional
+            Amount of padding to add to the true spatial extent of the provided `points`.
+            Adding a small amount of padding helps prevent out-of-bounds points due to
+            floating point imprecision. Default is 0.001 (i.e., 0.1%).
 
         **kwargs
             Additional arguments used to initialise the `SquareGridLayout`.
@@ -126,10 +130,12 @@ class SquareGridLayout(GridLayout):
         SquareGridLayout
             A class instance created from the bounding box of a point collection.
         """
-        dstats = infer_spatial_bounds(points)
+        dstats = infer_spatial_domain_stats(points)
         centre = (dstats['center_x'], dstats['center_y'])
+        L = (1 + padding_percentage) * dstats['max_extent']
+
         return cls(
-            total_side_length=dstats['max_extent'],
+            total_side_length=L,
             grid_center=centre,
             **kwargs)
 
@@ -217,7 +223,7 @@ class PointAggregator:
 
         Parameters
         ----------
-        grid_layout : GridLayout
+        grid_layout : FlexibleGridLayout
             The spatial grid on which points will be aggregated.
         points : np.ndarray
             Array with shape (N, 2) holding x and y coordinates for a collection of N points.
@@ -236,7 +242,7 @@ class PointAggregator:
         self.grid = grid_layout
         self.warn_out_of_bounds = warn_out_of_bounds
 
-        _validate_point_array(points)
+        points = _ensure_array_shape(points)
         self._assign_points_to_grid_cells(points)
 
         # initialise point-data aggregates to None
@@ -294,7 +300,7 @@ class PointAggregator:
         num_oob = (~self.inside_mask).sum()  # type: ignore
         if num_oob and self.warn_out_of_bounds:
             warnings.warn(
-                f"{num_oob} point(s) fall outside the grid bounds. Set "
+                f"{num_oob} point(s) located outside the grid bounds. Set "
                 f"`warn_out_of_bounds=False` to supress this warning.",
             )
 
@@ -442,7 +448,7 @@ class PointAggregator:
         return ax
 
 
-def infer_spatial_bounds(points):
+def infer_spatial_domain_stats(points):
     """
     Infer spatial domain statistics from a collection of points.
 
@@ -464,7 +470,7 @@ def infer_spatial_bounds(points):
     """
     if points.size == 0:
         raise ValueError('Cannot infer spatial domain from empty point data.')
-    _validate_point_array(points)
+    points = _ensure_array_shape(points)
 
     min_x, min_y = points.min(axis=0)  # type: ignore
     max_x, max_y = points.max(axis=0)  # type: ignore
@@ -480,7 +486,7 @@ def infer_spatial_bounds(points):
     )
 
 
-def _validate_point_array(points):
+def _ensure_array_shape(points):
     if not isinstance(points, np.ndarray):
         raise ValueError(
             "Unsupported data type. Point coordinates must be provided as a "
@@ -502,3 +508,5 @@ def _validate_point_array(points):
             f"d-dimensions (x and y coordinates) will be used. Data in additional "
             f"dimensions will be ignored."
         )
+
+    return points[:, :2]
