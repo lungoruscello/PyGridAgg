@@ -287,14 +287,14 @@ class PointAggregator:
         yy = points[:, 1]
 
         # make a mask for points inside the grid bounds
-        in_x = (xx >= self.grid.x_min) & (xx < self.grid.x_max)
-        in_y = (yy >= self.grid.y_min) & (yy < self.grid.y_max)
+        in_x = (xx >= self.grid.x_min) & (xx <= self.grid.x_max)
+        in_y = (yy >= self.grid.y_min) & (yy <= self.grid.y_max)
         self.inside_mask = in_x & in_y
 
         num_oob = (~self.inside_mask).sum()  # type: ignore
         if num_oob and self.warn_out_of_bounds:
             warnings.warn(
-                f"{num_oob} points fall outside the grid bounds. Set "
+                f"{num_oob} point(s) fall outside the grid bounds. Set "
                 f"`warn_out_of_bounds=False` to supress this warning.",
             )
 
@@ -304,10 +304,17 @@ class PointAggregator:
 
         # use integer division to find points' colum and row index
         if np.any(self.inside_mask):
-            xx_prime = xx[self.inside_mask] - self.grid.x_min
-            yy_prime = yy[self.inside_mask] - self.grid.y_min
-            self.grid_col_ids[self.inside_mask] = xx_prime // self.grid.cell_width
-            self.grid_row_ids[self.inside_mask] = yy_prime // self.grid.cell_height
+            inside_col_ids = (xx[self.inside_mask] - self.grid.x_min) // self.grid.cell_width
+            inside_row_ids = (yy[self.inside_mask] - self.grid.y_min) // self.grid.cell_height
+
+            # ensure that points with coordinates on the max boundaries
+            # are assigned the correct column and row index
+            inside_col_ids[xx[self.inside_mask] == self.grid.x_max] = -1
+            inside_row_ids[yy[self.inside_mask] == self.grid.y_max] = -1
+
+            self.grid_col_ids[self.inside_mask] = inside_col_ids
+            self.grid_row_ids[self.inside_mask] = inside_row_ids
+
 
     def aggregate(self, point_weights=None):
         """
