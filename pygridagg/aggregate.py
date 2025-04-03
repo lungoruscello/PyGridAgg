@@ -246,11 +246,11 @@ class BasePointAggregator(ABC):
         ax : matplotlib.axes.Axes, optional
             The axis on which to plot the image. If None, a new figure and axis will
             be created.
-        colorbar : bool, optional, default=True
-            Whether to display a colorbar.
-        colorbar_kwargs : dict, optional, default=None
-            Additional keyword arguments passed to `matplotlib.pyplot.colorbar` for
-            customising the appearance of the colorbar.
+        colorbar : bool, optional
+            Whether to display a colorbar. Default is True.
+        colorbar_kwargs : dict, optional
+            Dictionary with keyword arguments passed to `matplotlib.pyplot.colorbar`
+            for customising the appearance of the colorbar. None by default.
         **kwargs : additional keyword arguments
             Additional keyword arguments passed to `matplotlib.axes.Axes.imshow` for
             customising the plot.
