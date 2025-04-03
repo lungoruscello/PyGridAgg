@@ -4,7 +4,7 @@ import pytest
 from pygridagg.aggregate import FlexibleGridLayout, SquareGridLayout
 
 
-def test_non_square_grid_construction():
+def test_flexi_grid_construction():
     W, H = 10, 7
     C, R = 5, 10
     layout = FlexibleGridLayout(
@@ -25,6 +25,11 @@ def test_square_grid_construction():
     assert layout.shape == (C, C)
     assert layout.cell_width == L / C
     assert layout.cell_height == L / C
+
+
+def test_nonsquare_grid_construction_raises():
+    with pytest.raises(ValueError):
+        SquareGridLayout(1, grid_center=(0, 0), num_cells=3)
 
 
 def test_bounds_inference():
