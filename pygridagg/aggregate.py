@@ -175,13 +175,13 @@ class BasePointAggregator(ABC):
 
         Parameters
         ----------
-        np_ufunc : np.ufunc, option
+        np_ufunc : np.ufunc, optional
             A universal numpy function to be used in aggregation. Default is
             `np.add`. For a list of available functions, see
             https://numpy.org/doc/2.2/reference/ufuncs.html.
         point_weights : np.ndarray, optional
-            An optional 1D array of weights for each point. Its length must match
-            the number of points passed during class initialisation, (including
+            A 1D array of weights for each point. Its length must match the
+            number of points passed during class initialisation, (including
             out-of-bounds points). If no weights are provided (default), each
             point has weight 1 during aggregation.
         init_value : int or float, optional
