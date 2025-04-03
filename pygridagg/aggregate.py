@@ -3,8 +3,12 @@ Fast aggregation of 2D points on spatial grids.
 ========================================================================
 """
 import warnings
+from abc import ABC, abstractmethod
 
 import numpy as np
+
+from pygridagg.grid_layouts import *  # noqa
+from pygridagg.utils import ensure_array_shape
 
 try:
     import matplotlib.pyplot as plt
@@ -14,291 +18,125 @@ try:
 except ModuleNotFoundError:
     PLOTTING_AVAILABLE = False
 
-# TODO: Add from_bbox method
 
-
-class FlexibleGridLayout:
+# ***************************
+# Point Aggregators
+# ***************************
+class BasePointAggregator(ABC):
     """
-    A 2D grid layout in which the number of columns and rows, as well as
-    the grid's total width and height can be set independently of each other.
-
-    This class defines a grid structure, computes grid-cell centroids, but
-    does not hold any point data.
-
-
-    Attributes
-    ----------
-    x_centroids : np.ndarray
-        Sorted 1D array with x coordinates of grid-cell centroids
-    y_centroids : np.ndarray
-        Sorted 1D array with y coordinates of grid-cell centroids
-    """
-
-    def __init__(
-            self,
-            total_width,
-            total_height,
-            grid_center,
-            num_cols,
-            num_rows
-    ) -> None:
-        """
-        Initialise a `SpatialGrid` with the given parameters.
-
-        Parameters
-        ----------
-        total_width : int or float
-            The total width of the grid.
-        total_height : int or float
-            The total height of the grid.
-        grid_center : Tuple
-            A tuple specifying the x and y coordinates of the grid's center point.
-        num_cols : int
-            The number of columns in the grid.
-        num_rows : int
-            The number of rows in the grid.
-
-        Raises
-        -------
-        ValueError
-            If one of `num_cols`, `num_rows`, `total_width`, or `total_height`
-            is not strictly positive.
-        """
-        if not isinstance(grid_center, tuple):
-            raise ValueError(
-                "`grid_center` must be a tuple specifying the x and y "
-                "coordinate of the grid's desired centre point"
-            )
-
-        if num_cols <= 0 or num_rows <= 0:
-            raise ValueError("Number of columns and rows must be positive integers.")
-
-        if total_width <= 0 or total_height <= 0:
-            raise ValueError("Grid width and height must be positive.")
-
-        self.num_cols = num_cols
-        self.num_rows = num_rows
-        self.total_width = total_width
-        self.total_height = total_height
-        self.num_cells = self.num_cols * self.num_rows
-        self.shape = (self.num_rows, self.num_cols)
-
-        # compute grid bounds
-        c_x, c_y = grid_center
-        half_width = self.total_width / 2
-        half_height = self.total_height / 2
-        self.x_min, self.x_max = c_x - half_width, c_x + half_width
-        self.y_min, self.y_max = c_y - half_height, c_y + half_height
-
-        # compute grid-cell attributes
-        self.cell_width = (self.x_max - self.x_min) / num_cols
-        self.cell_height = (self.y_max - self.y_min) / num_rows
-        self.cell_area = self.cell_width * self.cell_height
-
-        # compute centroids of all grid cells
-        xx = np.linspace(self.x_min, self.x_max - self.cell_width, num_cols)
-        yy = np.linspace(self.y_min, self.y_max - self.cell_height, num_rows)
-        self.x_centroids = xx + (self.cell_width / 2)
-        self.y_centroids = yy + (self.cell_height / 2)
-
-
-class SquareGridLayout(FlexibleGridLayout):
-    """
-    A square spatial grid with an equal number of columns and rows.
-
-    This class defines a grid structure, computes grid-cell centroids, but
-    does not hold any point data.
-    """
-
-    @classmethod
-    def from_points(cls, points, padding_percentage=.001, **kwargs):
-        """
-        Create a `SquareGridLayout` that covers the spatial extent of the provided `points`.
-
-        Parameters
-        ----------
-        points : np.ndarray
-            Array with shape (N, 2) holding x and y coordinates for a collection of N points.
-        padding_percentage : float, optional
-            Amount of padding to add to the true spatial extent of the provided `points`.
-            Adding a small amount of padding helps prevent out-of-bounds points due to
-            floating point imprecision. Default is 0.001 (i.e., 0.1%).
-
-        **kwargs
-            Additional arguments used to initialise the `SquareGridLayout`.
-
-        Returns
-        -------
-        SquareGridLayout
-            A class instance created from the bounding box of a point collection.
-        """
-        dstats = infer_spatial_domain_stats(points)
-        centre = (dstats['center_x'], dstats['center_y'])
-        L = (1 + padding_percentage) * dstats['max_extent']
-
-        return cls(
-            total_side_length=L,
-            grid_center=centre,
-            **kwargs)
-
-    def __init__(
-            self,
-            total_side_length,
-            grid_center,
-            num_cells,
-    ):
-        """
-        Initialise a `SquareGridLayout` with the given parameters.
-
-        Parameters
-        ----------
-        total_side_length : int or float
-            The total side length (=width and height) of the grid.
-        grid_center : Tuple
-            A tuple specifying the x and y coordinates of the grid's center point.
-        num_cells : int
-            The total number of grid cells. The square-root of `num_cells` must be
-            an integer.
-
-        Raises
-        -------
-        ValueError
-            If `num_cells` is not a perfect square.
-        """
-
-        num_cols = np.sqrt(num_cells)
-        if num_cols % 1 != 0:
-            raise ValueError(
-                f"Invalid `num_cells={num_cells}`: Must be a perfect "
-                f"square (e.g., 9, 16, 25, 100)."
-            )
-
-        super().__init__(
-            total_width=total_side_length,
-            total_height=total_side_length,
-            grid_center=grid_center,
-            num_cols=int(num_cols),
-            num_rows=int(num_cols)
-        )
-
-
-class PointAggregator:
-    """
-    Aggregates 2D points on a spatial grid. The aggregation method can either
-    be simple counting or a weighted sum.
+    Base class for grid-based point aggregators.
 
     Attributes
     ----------
     grid_col_ids : np.ndarray
-        1D Array of grid-column indexes for each point. A column index of -1
-        marks out-of-bounds points.
+        1D array with column indices for each point. Out-of-bounds points have index -1.
     grid_row_ids : np.ndarray
-        1D Array of grid-row indexes for each point. A row index of -1 marks
-        out-of-bounds points.
+        1D array with row indices for each point. Out-of-bounds points have index -1.
     inside_mask : np.ndarray
-        1D Boolean mask indicating points located within the grid bounds.
-    cell_aggregates : np.ndarray or None
-        2D Gridded point-data aggregates, or None if no aggregation was performed.
-        (Read-only property).
+        1D Boolean mask indicating whether each point is inside the grid bounds.
+    N : int
+        Number of points.
+    N_inside : int
+        Number of points inside the grid.
+    cell_aggregates : np.ndarray
+        2D array of aggregated point data for each grid cell, or None if no aggregation
+        is performed.
 
     Methods
     -------
-    __init__(grid, points, localise_only=False, warn_out_of_bounds=True)
-        Initialises the `PointAggregator` with a grid layout and a collection of points.
     aggregate(point_weights=None)
-        Aggregates point data across grid cells, either by counting or summing weights.
+        Aggregate point data across grid cells according to the specific aggregation
+        strategy that subclasses implemented.
     plot(ax=None, colorbar=True, colorbar_kwargs=None, **kwargs)
-        Visualises point-data aggregates with a heatmap.
+        Visualise point-data aggregates with a heatmap.
     """
+
+    _check_implementation = True
 
     def __init__(
             self,
             grid_layout,
             points,
             *,
-            point_weights=None,
-            localise_only=False,
-            warn_out_of_bounds=True
+            warn_out_of_bounds=True,
+            **agg_func_kwargs
     ):
         """
         Initialise a `PointAggregator` with the given grid and points.
 
         Parameters
         ----------
-        grid_layout : FlexibleGridLayout
-            The spatial grid on which points will be aggregated.
+        grid_layout : Instance of `FlexibleGridLayout` or `SquareGridLayout`
+            The spatial grid layout to be used when aggregating points.
         points : np.ndarray
-            Array with shape (N, 2) holding x and y coordinates for a collection of N points.
-        point_weights : np.ndarray or None, optional
-            An optional 1D array of aggregation weights for each point. If no weights are
-            provided (default), point-data is aggregated using simple counting. Note that
-            aggregation weights can also be negative.
-        localise_only : bool, optional
-            Whether to skip point-data aggregation during class initialisation.
-            Default is False. If True, the provided `points` will still be 'localised'
-            on the grid and users will be able to retrieve their column and row indexes.
-            However, the `cell_aggregates` property will be None.
+            Array with shape (N, 2) holding the x and y coordinates for a collection
+            of N points.
         warn_out_of_bounds : bool, optional
-            Whether to show a warning for points that are out-of-bounds. Default
-            is True. If False, no such warning will be shown.
+            Whether to show a warning for points that are out-of-bounds. Default is True.
+            If set to False, no warnings for out-of-bounds points will be shown.
+        **agg_func_kwargs
+            Additional keyword arguments passed to the aggregation function.
         """
-        self.grid = grid_layout
+        self.layout = grid_layout
         self.warn_out_of_bounds = warn_out_of_bounds
 
-        points = _ensure_array_shape(points)
+        points = ensure_array_shape(points)
         self._assign_points_to_grid_cells(points)
+        self.N = len(points)  # noqa
+        self.N_inside = int(self.inside_mask.sum())  # noqa
 
-        # initialise point-data aggregates to None
-        self._aggregates = None  # will be overwritten by `aggregate`
+        self.cell_aggregates = self.aggregate(**agg_func_kwargs)
 
-        if not localise_only:
-            self.aggregate(point_weights)
-        else:
-            if point_weights is not None:
-                warnings.warn(
-                    "`point_weights` are ignored when `localise_only` is True."
-                )
+        if self._check_implementation:
+            assert self.cell_aggregates is not None, "Faulty implementation"
+            assert self.cell_aggregates.shape == self.layout.shape, "Faulty implementation"
 
-    @property
-    def cell_aggregates(self):
+    @abstractmethod
+    def aggregate(self, *args, **kwargs):
         """
-        Read-only property returning the gridded point-data aggregates
-        (either simple counts or weighted sums), if available.
+        Abstract method to aggregate point data across grid cells with a
+        custom strategy. Subclasses must define how the aggregation occurs
+        (e.g., counting or weighted sums).
+
+        Parameters
+        ----------
+        *args, **kwargs : Arguments specific to the chosen aggregation
+                          strategy, such as `point_weights` for weighted
+                          aggregations (see Notes).
 
         Returns
         -------
-        np.ndarray or None
-            The point-data aggregates, or None if no aggregation has yet been
-            performed.
+        np.ndarray
+            A 2D array with the aggregated values corresponding to the grid cells.
+
+        Notes
+        -----
+        All subclasses currently accept the following two function arguments:
+        - `fill_value`: The value used to fill grid cells containing no points.
+        - `dtype`: The numpy data type for the aggregation result.
+
+        Weighted aggregation strategies furthermore accept:
+        - point_weights`: A 1D array of aggregation weights for all points.
         """
-        return self._aggregates
+        pass
 
     def _assign_points_to_grid_cells(self, points):
         """
-        Find the proper column and row indexes for all `points`. Points
-        outside the grid bounds receive a column and row index of -1.
+        Find the proper column and row indexes for all `points` and store
+        them in `self.grid_col_ids` and `self.grid_row_ids`. Points outside
+        the grid bounds are assigned a column and row index of -1.
 
         Parameters
         ----------
         points : np.ndarray
             2D array of point coordinates, where each row is (x, y).
         """
-        self._no_points = points.shape[0] == 0
-
-        if self._no_points:
-            # nothing to do
-            self.grid_col_ids = np.array([])
-            self.grid_row_ids = np.array([])
-            self.inside_mask = np.array([])
-            return None
-
         xx = points[:, 0]
         yy = points[:, 1]
 
         # make a mask for points inside the grid bounds
-        in_x = (xx >= self.grid.x_min) & (xx <= self.grid.x_max)
-        in_y = (yy >= self.grid.y_min) & (yy <= self.grid.y_max)
-        self.inside_mask = in_x & in_y
+        self.inside_mask = (xx >= self.layout.x_min) & (xx <= self.layout.x_max) & \
+                           (yy >= self.layout.y_min) & (yy <= self.layout.y_max)
 
         num_oob = (~self.inside_mask).sum()  # type: ignore
         if num_oob and self.warn_out_of_bounds:
@@ -313,71 +151,89 @@ class PointAggregator:
 
         # use integer division to find points' colum and row index
         if np.any(self.inside_mask):
-            inside_col_ids = (xx[self.inside_mask] - self.grid.x_min) // self.grid.cell_width
-            inside_row_ids = (yy[self.inside_mask] - self.grid.y_min) // self.grid.cell_height
+            inside_col_ids = (xx[self.inside_mask] - self.layout.x_min) // self.layout.cell_width
+            inside_row_ids = (yy[self.inside_mask] - self.layout.y_min) // self.layout.cell_height
 
             # ensure that points with coordinates on the max boundaries
             # are assigned the correct column and row index
-            inside_col_ids[xx[self.inside_mask] == self.grid.x_max] = -1
-            inside_row_ids[yy[self.inside_mask] == self.grid.y_max] = -1
+            inside_col_ids[xx[self.inside_mask] == self.layout.x_max] = -1
+            inside_row_ids[yy[self.inside_mask] == self.layout.y_max] = -1
 
             self.grid_col_ids[self.inside_mask] = inside_col_ids
             self.grid_row_ids[self.inside_mask] = inside_row_ids
 
-
-    def aggregate(self, point_weights=None):
+    def _aggregate_with_ufunc(
+            self,
+            np_ufunc=np.add,
+            point_weights=None,
+            init_value=0,
+            dtype=np.float64
+    ):
         """
-        Aggregate point data within grid cells using either a simple count or a weighted sum.
+        Perform a weighted aggregation of point weights across grid cells via
+        `np.ufunc.at` for fast in-place aggregation.
 
         Parameters
         ----------
-        point_weights : np.ndarray or None, optional
-            1D array of weights to be used during point aggregation. If no weights are
-            provided (default), point data is aggregated by simple counting. Otherwise,
-            aggregation results will be a weighted sum. If provided, the length of
-            `point_weights` must match the overall number of points passed during
-            class initialisation (incl. points that are out of bounds, if any).
+        np_ufunc : np.ufunc, option
+            A universal numpy function to be used in aggregation. Default is
+            `np.add`. For a list of available functions, see
+            https://numpy.org/doc/2.2/reference/ufuncs.html.
+        point_weights : np.ndarray, optional
+            An optional 1D array of weights for each point. Its length must match
+            the number of points passed during class initialisation, (including
+            out-of-bounds points). If no weights are provided (default), each
+            point has weight 1 during aggregation.
+        init_value : int or float, optional
+            Value with which to initialise grid-cell aggregates before calling
+            `np.ufunc.at`.
+        dtype : np.dtype or obj, optional
+            A valid numpy data type or object that can be converted to a numpy
+            data type. Default is 'float'.  # TODO: Check
 
         Returns
         -------
         np.ndarray
-            A 2D array of gridded point-data aggregates.
-
-        Raises
-        ------
-        BadDataError
-            If the length of `point_weights` does not match the number of points.
+            2D integer array
         """
+        self._validate_point_weights(point_weights)
 
-        N_inside = self.inside_mask.sum()  # total points inside spatial domain
+        # initialise aggregates with zeroes
+        aggregates = np.full(self.layout.shape, fill_value=init_value, dtype=dtype)
 
+        inside_col_ids = self.grid_col_ids[self.inside_mask]
+        inside_row_ids = self.grid_row_ids[self.inside_mask]
+
+        if point_weights is None:
+            np_ufunc.at(aggregates, (inside_row_ids, inside_col_ids), 1)
+        else:
+            inside_weights = point_weights[self.inside_mask].astype(dtype)  # TODO: is this cast needed?
+            np_ufunc.at(aggregates, (inside_row_ids, inside_col_ids), inside_weights)
+
+        return aggregates
+
+    def _simple_count(self):
+        return self._aggregate_with_ufunc(np.add, point_weights=None, dtype=int)
+
+    def _weighted_sum(self, point_weights, dtype):
+        return self._aggregate_with_ufunc(np.add, point_weights, dtype=dtype)
+
+    def _fill_results_for_empty_cells(self, aggregates, fill_value):
+        if fill_value != 0:
+            counts = self._simple_count()
+            empty = counts == 0
+            aggregates[empty] = fill_value
+        return aggregates
+
+    def _validate_point_weights(self, point_weights):
         if point_weights is not None:
-            if len(point_weights) != N_inside:
+            if len(point_weights) != self.N:
                 raise ValueError(
                     "Length mismatch. `point_weights` must provide exactly "
                     "one weight for each point passed upon class initialisation. "
-                    f"(Expected array with shape ({N_inside},) but received "
+                    f"(Expected array with shape ({self.N_inside},) but received "
                     f"{point_weights.shape}.)"
                 )
-
-        # initialise raster with counts of zero
-        self._aggregates = np.zeros(self.grid.shape, dtype=int)
-
-        if not self._no_points:
-            inside_row_ids = self.grid_row_ids[self.inside_mask]
-            inside_col_ids = self.grid_col_ids[self.inside_mask]
-
-            if point_weights is None:
-                np.add.at(self._aggregates, (inside_row_ids, inside_col_ids), 1)  # noqa
-                assert self._aggregates.sum() == N_inside  # totals must match
-            else:
-                inside_weights = point_weights[self.inside_mask]
-                weighted_counts = np.zeros(self.grid.shape, dtype=float)
-                np.add.at(weighted_counts, (inside_row_ids, inside_col_ids), inside_weights)  # noqa
-                assert weighted_counts.sum() == inside_weights.sum()  # weighted sums must match
-                self._aggregates = weighted_counts
-
-        return self._aggregates
 
     def plot(self, ax=None, colorbar=True, colorbar_kwargs=None, **kwargs):
         """
@@ -396,8 +252,8 @@ class PointAggregator:
             Additional keyword arguments passed to `matplotlib.pyplot.colorbar` for
             customising the appearance of the colorbar.
         **kwargs : additional keyword arguments
-            Additional keyword arguments passed to `matplotlib.pyplot.colorbar` for
-            customising the colorbar.
+            Additional keyword arguments passed to `matplotlib.axes.Axes.imshow` for
+            customising the plot.
 
         Returns
         -------
@@ -414,13 +270,13 @@ class PointAggregator:
 
         Notes
         -----
-        - The grid extent is automatically determined from the grid’s spatial bounds, but
-          this can be customised using the `extent` argument in `kwargs`.
+        - The extent of the plot is automatically set to match the grid’s spatial bounds,
+          but this can be customised by passing the `extent` argument in `kwargs`.
         - The color map (`cmap`) defaults to 'bone_r', but this can be overwritten.
         """
         if self.cell_aggregates is None:
-            warnings.warn('Nothing to plot. Call `aggregate()` first.')
-            return None
+            warnings.warn("Call `aggregate()` before plotting.")
+            return
 
         if not PLOTTING_AVAILABLE:
             raise ModuleNotFoundError(
@@ -429,7 +285,7 @@ class PointAggregator:
             )
 
         # set imshow defaults
-        domain_extent = [self.grid.x_min, self.grid.x_max, self.grid.y_min, self.grid.y_max]
+        domain_extent = [self.layout.x_min, self.layout.x_max, self.layout.y_min, self.layout.y_max]
         kwargs['cmap'] = kwargs.get('cmap', 'bone_r')
         kwargs['origin'] = kwargs.get('origin', 'lower')
         kwargs['extent'] = kwargs.get('extent', domain_extent)
@@ -451,65 +307,100 @@ class PointAggregator:
         return ax
 
 
-def infer_spatial_domain_stats(points):
+class CountAggregator(BasePointAggregator):
+    """Simply counts the number of points within grid cells."""
+
+    def aggregate(self):
+        return self._simple_count()
+
+
+class WeightedSumAggregator(BasePointAggregator):
     """
-    Infer spatial domain statistics from a collection of points.
-
-    Parameters
-    ----------
-    points : np.ndarray
-        Array with shape (N, 2) holding x and y coordinates for a collection of N points.
-
-    Returns
-    -------
-    dict of str to float
-        A dictionary holding information on the spatial extent and centre point
-        of the bounding box that contains all `points`.
-
-    Raises
-    ------
-    BadDataError
-        If `points` is empty.
+    Computes a weighted sum over points within grid cells, based on a
+    user-provided array of aggregation weights for all points. Cells
+    without any points are represented with a customisable fill value
+    (default np.nan).
     """
-    if points.size == 0:
-        raise ValueError('Cannot infer spatial domain from empty point data.')
-    points = _ensure_array_shape(points)
 
-    min_x, min_y = points.min(axis=0)  # type: ignore
-    max_x, max_y = points.max(axis=0)  # type: ignore
-    ext_x = max_x - min_x
-    ext_y = max_y - min_y
-
-    return dict(
-        x_extent=ext_x,
-        y_extent=ext_y,
-        center_x=min_x + (ext_x / 2),
-        center_y=min_y + (ext_y / 2),
-        max_extent=max(ext_x, ext_y)
-    )
+    def aggregate(
+            self,
+            point_weights,
+            fill_value=np.nan,
+            dtype=np.float64,
+    ):
+        weighted_sums = self._weighted_sum(point_weights, dtype=dtype)
+        return self._fill_results_for_empty_cells(weighted_sums, fill_value)
 
 
-def _ensure_array_shape(points):
-    if not isinstance(points, np.ndarray):
-        raise ValueError(
-            "Unsupported data type. Point coordinates must be provided as a "
-            f"numpy array, but you passed an instance of type {type(points)}."
-        )
+class WeightedAverageAggregator(BasePointAggregator):
+    """
+    Computes a weighted average over points within grid cells, based on
+    a user-provided array of aggregation weights for all points. Cells
+    without any points are represented with a customisable fill value
+    (default np.nan).
+    """
 
-    if len(points.shape) != 2:
-        raise ValueError(
-            f"Wrong array shape ({points.shape}). Point coordinates must be provided "
-            "as an array with shape (N, D), where D >= 2. The first dimension (N) "
-            "represents the number of points, and the second dimension (D) should "
-            "contain at least two values: points' x and y coordinates."
-        )
+    def aggregate(
+            self,
+            point_weights,
+            fill_value=np.nan,
+            dtype=np.float64
+    ):
+        counts = self._simple_count()
+        aggregates = self._weighted_sum(point_weights, dtype=dtype)
 
-    if points.shape[1] > 2:
-        N, D = points.shape
-        warnings.warn(
-            f"Warning: Point data has shape (N={N}, D={D}). Only the first two "
-            f"d-dimensions (x and y coordinates) will be used. Data in additional "
-            f"dimensions will be ignored."
-        )
+        # compute averages for cells with events
+        with_events = counts > 0
+        aggregates[with_events] = aggregates[with_events] / counts[with_events]
 
-    return points[:, :2]
+        # set fill value for cells without events
+        aggregates[~with_events] = fill_value
+
+        return aggregates
+
+
+class MinimumWeightAggregator(BasePointAggregator):
+    """
+    Finds the minimum weight of all points within grid cells, based on
+    a user-provided array of aggregation weights for all points. Cells
+    without any points are represented with a customisable fill value
+    (default np.nan).
+    """
+
+    def aggregate(
+            self,
+            point_weights,
+            fill_value=np.nan,
+            dtype=np.float64,
+    ):
+        minima = self._aggregate_with_ufunc(np.minimum, point_weights, init_value=np.inf)
+        return self._fill_results_for_empty_cells(minima, fill_value)
+
+
+class MaximumWeightAggregator(BasePointAggregator):
+    """
+    Finds the maximum weight of all points within grid cells, based on
+    a user-provided array of aggregation weights for all points. Cells
+    without any points are represented with customisable a fill value
+    (default np.nan).
+    """
+
+    def aggregate(
+            self,
+            point_weights,
+            fill_value=np.nan,
+            dtype=np.float64,
+    ):
+        maxima = self._aggregate_with_ufunc(np.maximum, point_weights, init_value=-np.inf)
+        return self._fill_results_for_empty_cells(maxima, fill_value)
+
+
+class PointLocaliser(BasePointAggregator):
+    """
+    Locates points on the grid, but performs no data aggregation.
+    The `cell_aggregates` attribute will hence be `None`.
+    """
+    _check_implementation = False
+
+    def aggregate(self):
+        return None
