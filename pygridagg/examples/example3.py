@@ -6,16 +6,14 @@ import numpy as np
 from aggregate import SquareGridLayout, WeightedAverageAggregator
 
 # Define a grid layout
-side_length = 10
-num_cells = 500 ** 2
-layout = SquareGridLayout(side_length, grid_center=(0, 0), num_cells=num_cells)
+layout = SquareGridLayout.from_unit_square(num_cells=500 ** 2)
 
 # Generate random points
 N = 10_000_000
-rand_coords = np.random.randn(N, 2)
+rand_coords = np.random.randn(N, 2) * 0.1 + 0.5
 
 # Assign point weights in a smooth, periodic pattern
-freq = 5
+freq = 30
 rand_weights = np.sin(freq * rand_coords[:, 0]) * np.cos(freq * rand_coords[:, 1])
 
 # Time the data aggregation

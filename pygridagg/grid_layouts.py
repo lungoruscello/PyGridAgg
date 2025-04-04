@@ -137,6 +137,24 @@ class FlexibleGridLayout:
         return cls(x_min, x_max, y_min, y_max, num_cols, num_rows)
 
     @classmethod
+    def from_unit_square(cls, num_cols=10, num_rows=10):  # noqa
+        """
+        Create a `FlexibleGridLayout` covering the unit square.
+
+        Parameters
+        ----------
+        num_cols : int
+            The number of columns in the grid. Default is 10.
+        num_rows : int
+            The number of rows in the grid. Default is 10.
+
+        Returns
+        -------
+        FlexibleGridLayout
+        """
+        return cls(0, 1, 0, 1, num_cols, num_rows)
+
+    @classmethod
     def from_points(cls, points, num_cols=10, num_rows=10, padding_percent=0.0):
         """
         Create a `FlexibleGridLayout` that encompasses all provided `points`.
@@ -230,6 +248,9 @@ class SquareGridLayout(FlexibleGridLayout):
         num_cells : int
             The total number of grid cells, which must be a perfect square (e.g., 9,
             25, 36,...). Default is 64.
+        warn : bool, optional
+            Whether to issue a warning when the bounding box is not square and needs
+            to be enlarged along its shorter dimension. Default is True.
 
         Raises
         -------
@@ -307,6 +328,23 @@ class SquareGridLayout(FlexibleGridLayout):
 
         # create and return the `SquareGridLayout`
         return cls(x_min, x_max, y_min, y_max, num_cells, warn=False)
+
+    @classmethod
+    def from_unit_square(cls, num_cells=64):  # noqa
+        """
+        Create a `SquareGridLayout` covering the unit square.
+
+        Parameters
+        ----------
+        num_cells : int
+            The total number of grid cells, which must be a perfect square (e.g., 9,
+            25, 36,...). Default is 64.
+
+        Returns
+        -------
+        SquareGridLayout
+        """
+        return cls(0, 1, 0, 1, num_cells, warn=False)
 
     @classmethod
     def from_points(cls, points, num_cells=64, padding_percent=.001):  # noqa
