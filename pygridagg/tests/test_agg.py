@@ -19,7 +19,9 @@ np.random.seed(42)
 
 def test_empty_point_data_raises():
     empty_coords = np.array([]).reshape(0, 2)
-    layout = SquareGridLayout(10, grid_center=(0, 0), num_cells=5 ** 2)
+    layout = SquareGridLayout.from_centroid(
+        10, grid_center=(0, 0), num_cells=5 ** 2
+    )
     with pytest.raises(ValueError):
         CountAggregator(layout, empty_coords)
 
@@ -34,7 +36,9 @@ def test_missing_point_weights_raises():
 def test_localisation_only():
     N = 10
     rand_coords = np.random.randn(N, 2)
-    layout = SquareGridLayout(1, grid_center=(0.5, 0.5), num_cells=5 ** 2)
+    layout = SquareGridLayout.from_centroid(
+        1, grid_center=(0.5, 0.5), num_cells=5 ** 2
+    )
     agg = PointLocaliser(layout, rand_coords)
 
     assert agg.cell_aggregates is None
@@ -49,7 +53,7 @@ def test_no_points_lost_no_oob_quakes():
 
     layout = SquareGridLayout.from_points(
         coords,
-        padding_percentage=0.001,
+        padding_percent=0.001,
         num_cells=20 ** 2
     )
 
@@ -67,7 +71,7 @@ def test_no_points_lost_with_oob_quakes():
     # Note: Coordinates are in degrees lon/lat.
 
     tokyo = 139.753481, 35.684568
-    layout = SquareGridLayout(
+    layout = SquareGridLayout.from_centroid(
         10,
         grid_center=tokyo,
         num_cells=50 ** 2
@@ -263,12 +267,16 @@ def test_bespoke_example2_weight_maxima(bespoke_agg_args2):
 
 @pytest.fixture
 def bespoke_test_layout1():
-    return SquareGridLayout(1, grid_center=(0.5, 0.5), num_cells=16)
+    return SquareGridLayout.from_centroid(
+        1, grid_center=(0.5, 0.5), num_cells=16
+    )
 
 
 @pytest.fixture
 def bespoke_test_layout2():
-    return SquareGridLayout(2, grid_center=(-1, -1), num_cells=36)
+    return SquareGridLayout.from_centroid(
+        2, grid_center=(-1, -1), num_cells=36
+    )
 
 
 @pytest.fixture
