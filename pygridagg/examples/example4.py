@@ -17,7 +17,7 @@ class CustomThresholdCounter(BasePointAggregator):
         counts = np.full(self.layout.shape, fill_value=0, dtype=int)
 
         # Select the column and row indexes of eligible points.
-        # `self.inside_mask` is Boolean mask coding for points
+        # `self.inside_mask` is Boolean mask and is True for points
         # inside the grid bounds.
         point_mask = self.inside_mask & (point_weights > threshold)
         col_ids = self.grid_col_ids[point_mask]
