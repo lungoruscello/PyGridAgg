@@ -88,8 +88,15 @@ class BasePointAggregator(ABC):
         self.cell_aggregates = self.aggregate(**agg_func_kwargs)
 
         if self._check_implementation:
-            assert self.cell_aggregates is not None, "Faulty implementation"
-            assert self.cell_aggregates.shape == self.layout.shape, "Faulty implementation"
+            # Perform a sanity check on whether subclasses have returned
+            # data aggregates of the expected shape
+            if self.cell_aggregates is None or self.cell_aggregates.shape != self.layout.shape:
+                raise RuntimeError(
+                    "Invalid implementation of `BasePointAggregator`. Please "
+                    f"check the return value of the `aggregate` method "
+                    f"implemented by `{self.__class__.__name__}`."
+                )
+
 
     @abstractmethod
     def aggregate(self, *args, **kwargs):
