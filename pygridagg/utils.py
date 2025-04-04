@@ -33,10 +33,14 @@ def infer_spatial_domain_stats(points):
     ext_y = max_y - min_y
 
     return dict(
+        x_min=min_x,
+        y_min=min_y,
+        x_max=max_x,
+        y_max=max_y,
         x_extent=ext_x,
         y_extent=ext_y,
-        center_x=min_x + (ext_x / 2),
-        center_y=min_y + (ext_y / 2),
+        x_center=min_x + (ext_x / 2),
+        y_center=min_y + (ext_y / 2),
         max_extent=max(ext_x, ext_y)
     )
 
