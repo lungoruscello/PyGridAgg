@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
 
-from pygridagg import SquareGridLayout, CountAggregator
-from pygridagg.examples import load_japanese_earthquake_data
+from aggregate import SquareGridLayout, CountAggregator
+from examples import load_japanese_earthquake_data
 
-# Load example data on earthquakes near Japan
+# Load example data on earthquakes around Japan
 quake_coords, magnitudes = load_japanese_earthquake_data()
 
 # Define a square grid layout with 2,500 cells, encompassing all

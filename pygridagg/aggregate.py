@@ -7,8 +7,8 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from pygridagg.grid_layouts import *  # noqa
-from pygridagg.utils import ensure_array_shape
+from grid_layouts import *  # noqa
+from utils import ensure_array_shape
 
 try:
     import matplotlib.pyplot as plt
@@ -220,10 +220,10 @@ class BasePointAggregator(ABC):
         return aggregates
 
     def _simple_count(self):
-        return self._aggregate_with_ufunc(np.add, point_weights=None, dtype=int)
+        return self._aggregate_with_ufunc(np.add, point_weights=None, dtype=int)  # noqa
 
     def _weighted_sum(self, point_weights, dtype):
-        return self._aggregate_with_ufunc(np.add, point_weights, dtype=dtype)
+        return self._aggregate_with_ufunc(np.add, point_weights, dtype=dtype)  # noqa
 
     def _fill_results_for_empty_cells(self, aggregates, fill_value):
         if fill_value != 0:
@@ -380,7 +380,7 @@ class MinimumWeightAggregator(BasePointAggregator):
             fill_value=np.nan,
             dtype=np.float64,
     ):
-        minima = self._aggregate_with_ufunc(np.minimum, point_weights, init_value=np.inf)
+        minima = self._aggregate_with_ufunc(np.minimum, point_weights, init_value=np.inf)  # noqa
         return self._fill_results_for_empty_cells(minima, fill_value)
 
 
@@ -398,7 +398,7 @@ class MaximumWeightAggregator(BasePointAggregator):
             fill_value=np.nan,
             dtype=np.float64,
     ):
-        maxima = self._aggregate_with_ufunc(np.maximum, point_weights, init_value=-np.inf)
+        maxima = self._aggregate_with_ufunc(np.maximum, point_weights, init_value=-np.inf)  # noqa
         return self._fill_results_for_empty_cells(maxima, fill_value)
 
 

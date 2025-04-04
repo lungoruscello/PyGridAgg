@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from pygridagg.aggregate import ensure_array_shape
+from aggregate import ensure_array_shape
 
 
 def test_unknown_dtype_raises():

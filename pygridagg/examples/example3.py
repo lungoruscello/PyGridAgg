@@ -3,7 +3,7 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 
-from pygridagg import SquareGridLayout, WeightedAverageAggregator
+from aggregate import SquareGridLayout, WeightedAverageAggregator
 
 # Define a grid layout
 side_length = 10

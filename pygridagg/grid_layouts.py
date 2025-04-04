@@ -4,7 +4,7 @@ Customisable grid layouts that can be used in subsequent data aggregation.
 """
 import numpy as np
 
-from pygridagg.utils import infer_spatial_domain_stats
+from utils import infer_spatial_domain_stats
 
 __all__ = [
     "FlexibleGridLayout",
