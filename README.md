@@ -66,29 +66,34 @@ ax = agg.plot()
 ### Explanation of the Quickstart examples:
 
 **Grid Layout**:
-Both quickstart examples use a `SquareGridLayout`. This is a *restricted* grid 
-layout with an equal width and height and an equal number of columns and rows. 
-A more general `FlexibleGridLayout` is also available (see further [below](TODO)).
+Both quickstart examples use a `SquareGridLayout`. This defines a *restricted* grid 
+with equal width and height and an equal number of columns and rows. A more 
+general `FlexibleGridLayout` is also available.
 
 **Auto-sizing**:
 `from_points` automatically adjusts the grid bounds to encompass all provided 
 points, then divides the spatial domain into the specified number of grid cells.
+Alternatively, grid layouts [can also be defined](TODO) from bounding boxes, as well as from centre coordinates 
+and side dimensions.
 
 **Point aggregation**:
-The quickstart examples use the `CountAggregator` and `WeightedAverageAggregator`
+The two quickstart examples use the `CountAggregator` and `WeightedAverageAggregator`
 to respectively compute the number and average magnitude of earthquakes within grid 
-cells. Three additional point aggregators are available and [listed below](#built-in-data-aggregators).   
+cells. Three additional [point aggregators](#built-in-data-aggregators) are 
+available and users can implement their own via [subclassing](#customisation).   
  
 **Plotting**:
 The `plot` method is only available when `matplotlib` is installed (optional dependency) 
-and will  generate a heatmap of the aggregated data. 
+and will generate a heatmap of the aggregated data. 
 
 
 ## Simple but fast
 
+PyGrid performs simple tasks, but does so efficiently. 
+
 In the timed example below, 10 million random points are aggregated on a grid 
-with 250,000 cells. Aggregation is performed as an average over (simulated) 
-point weights:
+with 250,000 cells. For illustration, points are averaged using weights that
+smoothly vary with position:
 
 ```python
 import time
@@ -124,12 +129,12 @@ agg.plot()
 ## Built-in Data Aggregators
 
 Built-in data aggregators are listed below. All of them use [`np.ufunc.at`](https://numpy.org/doc/stable/reference/generated/numpy.ufunc.at.html) 
-for fast inplace aggregations.
+for fast inplace point-data aggregations.
 
 **CountAggregator**: Simply counts the number of points in each grid cell.
 
 **WeightedSumAggregator** and **WeightedAverageAggregator**: 
-Respectively compute a weighted sum and weighted average of points in each cell (given an array of 
+Respectively compute a weighted sum and a weighted average of points in each cell (given an array of 
 aggregation weights for all points).
 
 **MinimumWeightAggregator** and **MaximumWeightAggregator**: 
@@ -139,9 +144,9 @@ aggregation weights for all points).
 
 ## Customisation
 
-PyGridAgg allows you to define your own data aggregators. To do so, inherit  from `BasePointAggregator` and 
-implement the `aggregate` function, which is expected to return a 2D numpy array whose shape matches the 
-number of rows and columns in the grid. 
+PyGridAgg allows you to define your own data aggregators. To do so, inherit 
+from `BasePointAggregator` and implement the `aggregate` function, which is expected 
+to return a 2D numpy array.
 
 The example below shows a simple, custom aggregator that counts points whose weight 
 is above a specified threshold.
@@ -169,8 +174,9 @@ class CustomThresholdCounter(BasePointAggregator):
 
         # Use `np.add.at` for fast in-place addition
         np.add.at(counts, (row_ids, col_ids), 1)  # noqa
-
-        return counts
+        
+        # Note: Return value must always have shape (rows, columns)
+        return counts  
 
 
 # Load example data on earthquakes around Japan
