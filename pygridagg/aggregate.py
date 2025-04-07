@@ -226,10 +226,9 @@ class BasePointAggregator(ABC):
         return self._aggregate_with_ufunc(np.add, point_weights, dtype=dtype)  # noqa
 
     def _fill_results_for_empty_cells(self, aggregates, fill_value):
-        if fill_value != 0:
-            counts = self._simple_count()
-            empty = counts == 0
-            aggregates[empty] = fill_value
+        counts = self._simple_count()
+        empty = counts == 0
+        aggregates[empty] = fill_value
         return aggregates
 
     def _validate_point_weights(self, point_weights):
