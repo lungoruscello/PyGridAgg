@@ -36,7 +36,7 @@ quake_coords, magnitudes = load_japanese_earthquake_data()
 # earthquake locations
 layout = SquareGridLayout.from_points(quake_coords, num_cells=2_500)
 
-# Quickly count earthquakes above magnitude 6 across grid cells
+# Quickly count earthquakes above magnitude 6 within grid cells
 thresh = 6
 agg = CustomThresholdCounter(layout, quake_coords, point_weights=magnitudes, threshold=thresh)
 

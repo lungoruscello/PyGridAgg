@@ -7,8 +7,8 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from grid_layouts import *  # noqa
-from utils import ensure_array_shape
+from .grid_layouts import *  # noqa
+from .utils import ensure_array_shape
 
 try:
     import matplotlib.pyplot as plt
@@ -45,7 +45,7 @@ class BasePointAggregator(ABC):
     Methods
     -------
     aggregate(point_weights=None)
-        Aggregate point data across grid cells according to the specific aggregation
+        Aggregate point data within grid cells according to the specific aggregation
         strategy that subclasses implemented.
     plot(ax=None, colorbar=True, colorbar_kwargs=None, **kwargs)
         Visualise point-data aggregates with a heatmap.
@@ -101,7 +101,7 @@ class BasePointAggregator(ABC):
     @abstractmethod
     def aggregate(self, *args, **kwargs):
         """
-        Abstract method to aggregate point data across grid cells with a
+        Abstract method to aggregate point data within grid cells with a
         custom strategy. Subclasses must define how the aggregation occurs
         (e.g., counting or weighted sums).
 
@@ -177,7 +177,7 @@ class BasePointAggregator(ABC):
             dtype=np.float64
     ):
         """
-        Perform a weighted aggregation of point weights across grid cells via
+        Perform a weighted aggregation of point weights within grid cells via
         `np.ufunc.at` for fast in-place aggregation.
 
         Parameters

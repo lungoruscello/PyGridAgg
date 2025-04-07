@@ -25,7 +25,7 @@ agg = WeightedAverageAggregator(
 )
 elapsed_time = time.time() - start_time
 
-print(f"Execution time: {elapsed_time:.4f} seconds")
+print(f"Execution time: {elapsed_time:.3f} seconds")
 
 # Show the result
 agg.plot()
