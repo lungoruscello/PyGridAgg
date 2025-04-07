@@ -241,7 +241,15 @@ class BasePointAggregator(ABC):
                     f"{point_weights.shape}.)"
                 )
 
-    def plot(self, ax=None, colorbar=True, colorbar_kwargs=None, **kwargs):
+    def plot(
+            self,
+            ax=None,
+            colorbar=True,
+            colorbar_kwargs=None,
+            *,
+            title=None,
+            **kwargs
+    ):
         """
         Use a heatmap to visualise gridded point-data aggregates.
 
@@ -257,6 +265,8 @@ class BasePointAggregator(ABC):
         colorbar_kwargs : dict, optional
             Dictionary with keyword arguments passed to `matplotlib.pyplot.colorbar`
             for customising the appearance of the colorbar. None by default.
+        title : str, optional
+            Title for the plot. None by default.
         **kwargs : additional keyword arguments
             Additional keyword arguments passed to `matplotlib.axes.Axes.imshow` for
             customising the plot.
@@ -302,6 +312,8 @@ class BasePointAggregator(ABC):
 
         # plot
         im = ax.imshow(self.cell_aggregates, **kwargs)
+        if title is not None:
+            ax.set_title(title)
 
         if colorbar:
             ckwargs = {} if colorbar_kwargs is None else colorbar_kwargs
