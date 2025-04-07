@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
-from aggregate import SquareGridLayout, WeightedAverageAggregator
-from examples import load_japanese_earthquake_data
+from pygridagg.aggregate import SquareGridLayout, WeightedAverageAggregator
+from pygridagg.examples import load_japanese_earthquake_data
 
 # Load example data on earthquakes around Japan
 quake_coords, magnitudes = load_japanese_earthquake_data()

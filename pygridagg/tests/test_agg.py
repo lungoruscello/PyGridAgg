@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from aggregate import (
+from pygridagg.aggregate import (
     CountAggregator,
     WeightedSumAggregator,
     WeightedAverageAggregator,
@@ -9,8 +9,8 @@ from aggregate import (
     MaximumWeightAggregator,
     PointLocaliser
 )
-from examples import load_japanese_earthquake_data
-from grid_layouts import SquareGridLayout
+from pygridagg.examples import load_japanese_earthquake_data
+from pygridagg.grid_layouts import SquareGridLayout
 
 np.random.seed(42)
 

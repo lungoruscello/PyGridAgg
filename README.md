@@ -97,7 +97,7 @@ smoothly vary with position:
 import time
 import numpy as np
 
-from aggregate import SquareGridLayout, WeightedAverageAggregator
+from pygridagg.aggregate import SquareGridLayout, WeightedAverageAggregator
 
 # Define a grid on the unit square
 layout = SquareGridLayout.from_unit_square(num_cells=500 ** 2)
@@ -153,8 +153,8 @@ within grid cells if an associated point weight is above a specified
 ```python
 import numpy as np
 
-from aggregate import BasePointAggregator, SquareGridLayout
-from examples import load_japanese_earthquake_data
+from pygridagg.aggregate import BasePointAggregator, SquareGridLayout
+from pygridagg.examples import load_japanese_earthquake_data
 
 
 class CustomThresholdCounter(BasePointAggregator):

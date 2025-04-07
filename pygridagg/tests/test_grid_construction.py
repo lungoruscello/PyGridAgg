@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from aggregate import FlexibleGridLayout, SquareGridLayout
+from pygridagg.aggregate import FlexibleGridLayout, SquareGridLayout
 
 
 def test_flexi_grid_bbox_construction():

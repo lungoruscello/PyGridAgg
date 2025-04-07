@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from aggregate import BasePointAggregator
-from aggregate import SquareGridLayout
-from examples import load_japanese_earthquake_data
+from pygridagg.aggregate import BasePointAggregator
+from pygridagg.aggregate import SquareGridLayout
+from pygridagg.examples import load_japanese_earthquake_data
 
 
 # Implement a custom aggregator via subclassing
