@@ -1,0 +1,10 @@
+name: base-env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python>=3.6
+  - pip
+  - numpy
+  - pytest  # optional
+  - matplotlib  # optional
