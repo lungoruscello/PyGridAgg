@@ -15,9 +15,8 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     packages=find_packages(),
-    install_requires=['numpy'],
+    install_requires=['numpy', 'matplotlib'],
     extras_require={
-        "plotting": ["matplotlib"],
         "dev": ["pytest>=7.0", "twine>=4.0.2"],
     },
     classifiers=["Programming Language :: Python :: 3",
