@@ -271,12 +271,12 @@ class SquareGridLayout(FlexibleGridLayout):
                 c_y = y_max - (y_ext / 2)
                 y_min = c_y - (x_ext / 2)
                 y_max = c_y + (x_ext / 2)
-                assert y_max - y_min == x_ext
+                assert np.isclose(y_max - y_min, x_ext)
             else:
                 c_x = x_max - (x_ext / 2)
                 x_min = c_x - (y_ext / 2)
                 x_max = c_x + (y_ext / 2)
-                assert x_max - x_min == y_ext
+                assert np.isclose(x_max - x_min, y_ext)
 
         num_cols = np.sqrt(num_cells)
         if num_cols % 1 != 0:
