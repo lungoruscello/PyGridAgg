@@ -5,11 +5,10 @@
 
 ## About
 
-PyGridAgg lets you quickly aggregate point data on spatial grids. 
-It includes built-in aggregation schemes that are designed to aggregate 
-[large point datasets quickly](#Simple-but-fast) 
-through efficient numpy operations. Defining grid layouts is also 
-simple through several alternative constructors.
+PyGridAgg allows you to easily aggregate point data on spatial grids. 
+It includes efficient built-in aggregation schemes that can process large point datasets 
+[quickly](#fast-in-place-aggregations). Defining grid layouts is also simple through several 
+alternative grid constructors.
 
 While originally developed for applications in geo-spatial data analysis, 
 PyGridAgg only depends on `numpy` and requires no GIS toolchain.  
@@ -23,71 +22,34 @@ You can install `pygridagg` using pip:
 
 ## Quickstart
 
-### Counting points within grid cells 
-
 ```python
-from pygridagg import SquareGridLayout, CountAggregator
+import matplotlib.pyplot as plt
+from pygridagg import *
 from pygridagg.examples import load_japanese_earthquake_data
 
 # Load example data on earthquakes around Japan
 quake_coords, magnitudes = load_japanese_earthquake_data()
 
-# Define a square grid layout with 2,500 cells, encompassing all
-# earthquake locations
+# Define a square grid layout with 2,500 cells. The `from_points`
+# constructor adjusts grid bounds to encompass all earthquake locations.
 layout = SquareGridLayout.from_points(quake_coords, num_cells=2_500)
 
-# Quickly count the number of earthquakes within grid cells
-agg = CountAggregator(layout, quake_coords)
+# Compute the number of earthquakes and the maximum earthquake 
+# magnitude for all grid cells
+agg_counts = CountAggregator(layout, quake_coords)
+agg_max_mag = MaximumWeightAggregator(layout, quake_coords, point_weights=magnitudes)
 
-# Plot the aggregated data as a heatmap
-ax = agg.plot()
+# Plot the aggregated data using heatmaps
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 3.5))
+agg_counts.plot(ax=ax1, title="No. of earthquakes")
+agg_max_mag.plot(ax=ax2, title="Max. magnitude", cmap='magma')
+plt.show()
 ```
 
-### Weighted averages
+## Fast in-place aggregations
 
-```python
-from pygridagg import SquareGridLayout, WeightedAverageAggregator
-from pygridagg.examples import load_japanese_earthquake_data
-
-# Load example data on earthquakes around Japan
-quake_coords, magnitudes = load_japanese_earthquake_data()
-
-# Define a square grid layout with 2,500 cells, encompassing all
-# earthquake locations
-layout = SquareGridLayout.from_points(quake_coords, num_cells=2_500)
-
-# Quickly compute average earthquake magnitudes within grid cells
-agg = WeightedAverageAggregator(layout, quake_coords, point_weights=magnitudes)
-
-# Plot the aggregated data as a heatmap
-ax = agg.plot()
-```
-
-### Explanation of the Quickstart examples:
-
-**Grid Layout**:
-Both quickstart examples use a `SquareGridLayout`. This defines a *restricted* grid 
-with equal width and height and an equal number of columns and rows. A more 
-general `FlexibleGridLayout` is also available.
-
-**Auto-sizing**:
-`from_points` automatically adjusts the grid bounds to encompass all provided 
-points, then divides the spatial domain into the specified number of grid cells.
-Alternatively, grid layouts [can also be defined](#defining-grid-layouts) from bounding boxes, as well as from centre coordinates 
-and side dimensions.
-
-**Point aggregation**:
-The quickstart examples respectively use the `CountAggregator` and `WeightedAverageAggregator`
-to compute the number and average magnitude of earthquakes within grid 
-cells. Three additional [point aggregators](#built-in-data-aggregators) are 
-available and users can implement their own via subclassing.   
- 
-**Plotting**:
-The `plot` method is only available when `matplotlib` is installed (optional dependency) 
-and will generate a heatmap of the aggregated data. 
-
-
-## Simple but fast
+All point-data aggregators [currently included](#built-in-data-aggregators) in PyGridAgg use [`np.ufunc.at`](https://numpy.org/doc/stable/reference/generated/numpy.ufunc.at.html) 
+for fast inplace operations.
 
 In the timed example below, 10 million random points are aggregated on a grid 
 with 250,000 cells. For illustration, points are averaged using weights that
@@ -125,29 +87,25 @@ agg.plot()
  
 ## Built-in Data Aggregators
 
-The built-in data aggregators are listed below. All of them use [`np.ufunc.at`](https://numpy.org/doc/stable/reference/generated/numpy.ufunc.at.html) 
-for fast inplace point-data aggregations.
+* **CountAggregator**: Simply counts the number of points in each grid cell.
 
-* **CountAggregator**: Simply counts the number of points in each grid cell
 
- 
 * **WeightedSumAggregator** and **WeightedAverageAggregator**: 
-Respectively compute a weighted sum and a weighted average of points in each cell (given an array of 
+Compute a weighted sum or weighted average of points in each cell (given an array of 
 aggregation weights for all points).
  
 
 * **MinimumWeightAggregator** and **MaximumWeightAggregator**: 
-Respectively compute the minimum 
-and maximum weight of points in each grid cell (given an array of 
+Compute the minimum or maximum weight of points in each grid cell (given an array of 
 aggregation weights for all points). 
 
 ## Custom Aggregators
 
-PyGridAgg allows you to define your own data aggregators by inheriting 
+You can also define your own data aggregators by inheriting 
 from `BasePointAggregator` and implementing the `aggregate` function.
 
-To illustrate, let's implement an aggregator that only counts points  
-within grid cells if an associated point weight is above a specified 
+The example below implemnents a custom aggregator that only counts points 
+within grid cells if an associated point weight is above a certain 
 *threshold*.
 
 ```python
@@ -161,10 +119,7 @@ class CustomThresholdCounter(BasePointAggregator):
     """Counts the number of points whose weight is above a threshold."""
 
     def aggregate(self, point_weights, threshold):
-        # This method is expected to return a 2D numpy array
-        # whose shape matches `self.layout.shape` (rows, columns)
-        
-        # Initialise grid counts with zeroes. 
+        # Initialise grid counts with zeroes
         counts = np.full(self.layout.shape, fill_value=0, dtype=int)
 
         # Select the column and row indexes of eligible points.
@@ -174,20 +129,16 @@ class CustomThresholdCounter(BasePointAggregator):
         row_ids = self.grid_row_ids[point_mask]
 
         # Use `np.add.at` for fast in-place addition
-        np.add.at(counts, (row_ids, col_ids), 1)  # noqa
+        np.add.at(counts, (row_ids, col_ids), 1)
         
-        # Note: Return value must always have shape (rows, columns)
+        # Note: Returned array must always have shape (rows, columns)
         return counts  
 
 
-# Load example data on earthquakes around Japan
 quake_coords, magnitudes = load_japanese_earthquake_data()
-
-# Define a square grid layout with 2,500 cells, encompassing all
-# earthquake locations
 layout = SquareGridLayout.from_points(quake_coords, num_cells=2_500)
 
-# Quickly count earthquakes above magnitude 6 within grid cells
+# Only count earthquakes above magnitude 6
 thresh = 6
 agg = CustomThresholdCounter(layout, quake_coords, point_weights=magnitudes, threshold=thresh)
 
@@ -200,50 +151,46 @@ ax = agg.plot()
 
 ## Defining Grid Layouts
 
-PyGridAgg provides two different grid layouts: The **SquareGridLayout** is restricted
-to have the same width and height as well as the same number of columns and rows. 
-The **FlexibleGridLayout** allows you to set the overall width and height and  
-number of columns and rows independently of each other.
+You can choose between two different grid layouts: 
 
-For both layout types, you can set the *grid bounds* in three different ways: 
+* **SquareGridLayout**: is restricted to have the same width and height as well as the same number of columns and rows. 
+* **FlexibleGridLayout**: allows you to set the overall width and height and the number of columns 
+and rows independently of each other.
 
-* Specify a **bounding box** (default).
+For both layout types, you can set the *grid bounds* in three ways: 
 
-
-* Specify a **centre coordinate and side dimensions** for the grid (using the 
-`from_centroid` method).
-
-
-* Provide **template points** whose bounding box is used to infer 
-appropriate grids limits (using the `from_points` method).   
+1. by specifying a **bounding box** (using the default `__init__`); 
+2. by specifying the **centre coordinate and side dimensions** of the grid (using `from_centroid`);
+3. by providing **template points** whose bounding box is used to *infer* the appropriate 
+grids limits (using `from_points`).   
 
 
-## Frequently Asked Questions
+## Further details
 
-### How do I access the grid coordinates of points?
-
-Aggregator classes store the column and row indexes of points using the `grid_col_ids` 
-and `row_col_ids` attributes. Points located outside the grid limits are marked with 
-a column and row index of -1.
-
-### How are out-of-bounds points handled?
+### Out-of-bounds points
 
 Points located outside the grid bounds do not affect the data aggregation.
-However, built-in aggregator classes will issue a warning when out-of-bounds
-points are present, unless you can silence this warning (`warn_out_of_bounds=True`).  
+However, aggregator classes will always issue a warning when out-of-bounds
+points are present, unless you silence this warning explicitely (`warn_out_of_bounds=True`).
 
 
-### What about Coordinate Reference Systems?
+### Column and row indexes
 
-PyGridAgg aims to be as lightweight as possible and does not depend on GIS libraries, 
-such as `pyproj` or `geopandas`. Users need to handle transformations between coordinate
-reference systems themselves and PyGridAgg performs no checks to ensure that point 
-locations and grid layouts are expressed in the same CRS.
+You can access the column and row indexes of points using the `grid_col_ids` 
+and `row_col_ids` attributes of an aggregator. Points located outside the grid limits are marked with 
+a column and row index of -1.
+
+### Coordinate Reference Systems
+
+PyGridAgg aims to be as lightweight as possible and does not depend on GIS libraries 
+like `pyproj` or `geopandas`. As such, users need to handle transformations between coordinate
+reference systems themselves and no sanity checks are performed on user-provided coordinates.
+
 
 ## Requirements
 
 * `numpy`
-* `matplotlib` (optional)
+* `matplotlib`
 
 ## License
 

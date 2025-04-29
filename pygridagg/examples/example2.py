@@ -1,18 +1,32 @@
+import time
+
 import matplotlib.pyplot as plt
+import numpy as np
 
 from pygridagg.aggregate import SquareGridLayout, WeightedAverageAggregator
-from pygridagg.examples import load_japanese_earthquake_data
 
-# Load example data on earthquakes around Japan
-quake_coords, magnitudes = load_japanese_earthquake_data()
+# Define a grid layout
+layout = SquareGridLayout.from_unit_square(num_cells=500 ** 2)
 
-# Define a square grid layout with 2,500 cells, encompassing all
-# earthquake locations
-layout = SquareGridLayout.from_points(quake_coords, num_cells=2_500)
+# Generate random points
+N = 10_000_000
+rand_coords = np.random.randn(N, 2) * 0.1 + 0.5
 
-# Quickly compute average earthquake magnitudes within grid cells
-agg = WeightedAverageAggregator(layout, quake_coords, point_weights=magnitudes)
+# Assign point weights in a smooth, periodic pattern
+freq = 30
+rand_weights = np.sin(freq * rand_coords[:, 0]) * np.cos(freq * rand_coords[:, 1])
 
-# Plot the aggregated data as a heatmap
-ax = agg.plot()
+# Time the data aggregation
+start_time = time.time()
+agg = WeightedAverageAggregator(
+    layout, rand_coords,
+    point_weights=rand_weights,
+    warn_out_of_bounds=False
+)
+elapsed_time = time.time() - start_time
+
+print(f"Execution time: {elapsed_time:.3f} seconds")
+
+# Show the result
+agg.plot()
 plt.show()
