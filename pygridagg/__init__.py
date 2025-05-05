@@ -6,7 +6,6 @@ __author__ = "S. Langenbach"
 
 
 from .aggregate import (
-
     CountAggregator,
     WeightedSumAggregator,
     WeightedAverageAggregator,
