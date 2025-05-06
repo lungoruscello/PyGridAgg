@@ -5,18 +5,11 @@ Fast aggregation of 2D points on spatial grids.
 import warnings
 from abc import ABC, abstractmethod
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 from .grid_layouts import *  # noqa
 from .utils import ensure_array_shape
-
-try:
-    import matplotlib.pyplot as plt
-    from mpl_toolkits.axes_grid1 import make_axes_locatable
-
-    PLOTTING_AVAILABLE = True
-except ModuleNotFoundError:
-    PLOTTING_AVAILABLE = False
 
 
 # ***************************
@@ -293,12 +286,6 @@ class BasePointAggregator(ABC):
         if self.cell_aggregates is None:
             warnings.warn("Call `aggregate()` before plotting.")
             return
-
-        if not PLOTTING_AVAILABLE:
-            raise ModuleNotFoundError(
-                "The optional 'matplotlib' library is required for plotting. "
-                "Please install it using pip, conda, or mamba."
-            )
 
         # set imshow defaults
         domain_extent = [self.layout.x_min, self.layout.x_max, self.layout.y_min, self.layout.y_max]
