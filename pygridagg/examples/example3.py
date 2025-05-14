@@ -1,14 +1,13 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from pygridagg.aggregate import BasePointAggregator
-from pygridagg.aggregate import SquareGridLayout
+import pygridagg as pga
 from pygridagg.examples import load_japanese_earthquake_data
 
 
 # Implement a custom aggregator via subclassing
 
-class CustomThresholdCounter(BasePointAggregator):
+class CustomThresholdCounter(pga.BasePointAggregator):
     """Counts the number of points whose weight is above a threshold."""
 
     def aggregate(self, point_weights, threshold):
@@ -34,7 +33,7 @@ quake_coords, magnitudes = load_japanese_earthquake_data()
 
 # Define a square grid layout with 2,500 cells, encompassing all
 # earthquake locations
-layout = SquareGridLayout.from_points(quake_coords, num_cells=2_500)
+layout = pga.SquareGridLayout.from_points(quake_coords, num_cells=2_500)
 
 # Quickly count earthquakes above magnitude 6 within grid cells
 thresh = 6
@@ -43,6 +42,6 @@ agg = CustomThresholdCounter(layout, quake_coords, point_weights=magnitudes, thr
 # Check that no earthquakes were 'lost'
 assert agg.cell_aggregates.sum() == (magnitudes > thresh).sum()
 
-# Plot the aggregated data as a heatmap
+# Show counts of major earthquakes with a heatmap
 ax = agg.plot()
 plt.show()

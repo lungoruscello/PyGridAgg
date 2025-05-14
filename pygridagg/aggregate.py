@@ -55,7 +55,7 @@ class BasePointAggregator(ABC):
             **agg_func_kwargs
     ):
         """
-        Initialise a `PointAggregator` with the given grid and points.
+        Initialise a `PointAggregator` with the given grid layout and points.
 
         Parameters
         ----------
