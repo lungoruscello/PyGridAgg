@@ -1,4 +1,4 @@
-# PyGridAgg <img src="https://github.com/lungoruscello/PyGridAgg/tree/master/pygridagg/assets/icon.png" alt="icon" width="60" height="60"/>
+# PyGridAgg <img src="pygridagg/assets/icon.png" alt="icon" width="60" height="60"/>
 
 [![PyPI Latest Release](https://img.shields.io/pypi/v/PyGridAgg.svg)](https://pypi.org/project/PyGridAgg/)
 [![License](https://img.shields.io/pypi/l/PyGridAgg.svg)](https://github.com/lungoruscello/PyGridAgg/blob/master/LICENSE.txt)
