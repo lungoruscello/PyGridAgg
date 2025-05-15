@@ -42,11 +42,10 @@ plt.show()
 ## Simple and fast
 
 
-For performance, all built-in [point aggregators](#built-in-point-aggregators) use [
-`np.ufunc.at`](https://numpy.org/doc/stable/reference/generated/numpy.ufunc.at.html) for efficient in-place operations. 
-In the timed example below, 10 million random points are aggregated on a grid with 250,000 cells. 
-For illustration, points are aggregated using a weighted average, with point weights being assigned 
-as a function of position:
+For performance, all built-in [point aggregators](#built-in-point-aggregators) leverage in-place operations via [
+`np.ufunc.at`](https://numpy.org/doc/stable/reference/generated/numpy.ufunc.at.html). In the timed example below, 
+10 million random points are aggregated on a grid with 250,000 cells. For illustration, points are aggregated 
+using a weighted average, with point weights being assigned as a function of position:
 
 ```python
 import time
