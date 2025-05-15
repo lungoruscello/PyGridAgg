@@ -1,7 +1,8 @@
 # PyGridAgg <img src="pygridagg/assets/icon.png" alt="icon" width="60" height="60"/>
 
 [![PyPI Latest Release](https://img.shields.io/pypi/v/PyGridAgg.svg)](https://pypi.org/project/PyGridAgg/)
-[![License](https://img.shields.io/pypi/l/PyGridAgg.svg)](https://github.com/lungoruscello/PyGridAgg/blob/master/LICENSE.txt)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/lungoruscello/PyGridAgg/blob/master/LICENSE.txt)
+
 
 **PyGridAgg** is a lightweight Python package that allows you to easily aggregate point data on 2D grids.
 It includes efficient built-in aggregation schemes that can process large point datasets 
@@ -31,7 +32,7 @@ quake_coords, magnitudes = load_japanese_earthquake_data()
 layout = pga.SquareGridLayout.from_points(quake_coords, num_cells=100**2)
 
 # Count earthquakes across grid cells
-agg_counts = pga.CountAggregator(layout, quake_coords, )
+agg_counts = pga.CountAggregator(layout, quake_coords)
 
 # Show a heatmap
 agg_counts.plot(title="Earthquakes around Japan (2010-2023)")
@@ -40,6 +41,9 @@ plt.show()
 
 ## Simple and fast
 
+
+For performance, all built-in [point aggregators](#built-in-point-aggregators) use [
+`np.ufunc.at`](https://numpy.org/doc/stable/reference/generated/numpy.ufunc.at.html) for efficient in-place operations. 
 In the timed example below, 10 million random points are aggregated on a grid with 250,000 cells. 
 For illustration, points are aggregated using a weighted average, with point weights being assigned 
 as a function of position:
@@ -102,9 +106,6 @@ The following aggregator classes are currently available:
 * **MinimumWeightAggregator** and **MaximumWeightAggregator**:
   Compute the minimum or maximum weight of points in each grid cell (given an array of aggregation weights).
 
-
-All built-in aggregators classes use [
-`np.ufunc.at`](https://numpy.org/doc/stable/reference/generated/numpy.ufunc.at.html) for efficient in-place operations. 
 
 ### Out-of-bounds points
 
@@ -178,4 +179,4 @@ ax = agg.plot()
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE.txt](LICENSE.txt)  for details.
+This project is licensed under the MIT License. See [LICENSE.txt](https://github.com/lungoruscello/PyGridAgg/blob/master/LICENSE.txt) for details.

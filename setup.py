@@ -1,9 +1,14 @@
+import re
+
 from setuptools import setup, find_packages
 
 import pygridagg as agg
 
 with open("README.md", 'r') as f:
     long_description = f.read()
+
+# for Pypi, strip out the project icon from the header line
+long_description = re.sub(r'PyGridAgg <img.*?>', 'PyGridAgg', long_description)
 
 setup(
     name="PyGridAgg",
