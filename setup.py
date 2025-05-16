@@ -2,22 +2,34 @@ import re
 
 from setuptools import setup, find_packages
 
-import pygridagg as agg
+import pygridagg as pga
 
-with open("README.md", 'r') as f:
-    long_description = f.read()
 
-# for Pypi, strip out the project icon from the header line
-long_description = re.sub(r'PyGridAgg <img.*?>', 'PyGridAgg', long_description)
+def clean_readme_for_pypi():
+    with open("README.md", 'r') as f:
+        readme_lines = f.readlines()
+
+    # strip out the project icon from the title line
+    readme_lines[0] = re.sub(r'PyGridAgg <img.*?>', 'PyGridAgg', readme_lines[0])
+
+    # remove the two shields
+    filtered_lines = [l for l in readme_lines if not l.startswith("[![PyPI Latest Release]")]
+    filtered_lines = [l for l in filtered_lines if not l.startswith("[![MIT License]")]
+
+    # concatenate
+    long_description = "".join(filtered_lines)
+
+    return long_description
+
 
 setup(
     name="PyGridAgg",
-    version=agg.__version__,
-    description=agg.__about__,
-    url=agg.__url__,
-    author=agg.__author__,
-    license=agg.__license__,
-    long_description=long_description,
+    version=pga.__version__,
+    description=pga.__about__,
+    url=pga.__url__,
+    author=pga.__author__,
+    license=pga.__license__,
+    long_description=clean_readme_for_pypi(),
     long_description_content_type="text/markdown",
     packages=find_packages(),
     install_requires=['numpy', 'matplotlib'],
