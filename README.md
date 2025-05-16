@@ -1,7 +1,7 @@
 # PyGridAgg <img src="pygridagg/assets/icon.png" alt="icon" width="60" height="60"/>
 
 [![PyPI Latest Release](https://img.shields.io/pypi/v/PyGridAgg.svg)](https://pypi.org/project/PyGridAgg/)
-[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/lungoruscello/PyGridAgg/blob/master/LICENSE.txt)
+[![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/lungoruscello/PyGridAgg/blob/master/LICENSE.txt)
 
 
 **PyGridAgg** is a lightweight Python package that allows you to easily aggregate point data on 2D grids.
