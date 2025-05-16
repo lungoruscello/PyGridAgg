@@ -176,6 +176,11 @@ ax = agg.plot()
 * `numpy`
 * `matplotlib`
 
-## License
+## Feedback
 
-This project is licensed under the MIT License. See [LICENSE.txt](https://github.com/lungoruscello/PyGridAgg/blob/master/LICENSE.txt) for details.
+If you would like to give feedback, encounter issues, or want to suggest improvements, please [open an issue](https://github.com/lungoruscello/PyGridAgg/issues).
+Since this package is developed and tested on Linux, issues encountered on other platforms may take longer to address.
+
+## Licence
+
+This project is licensed under the MIT Licence. See [LICENSE.txt](https://github.com/lungoruscello/PyGridAgg/blob/master/LICENSE.txt) for details.
